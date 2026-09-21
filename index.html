@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>lazydle — a lazy word game</title>
+
+<meta property="og:title" content="lazydle">
+<meta property="og:description" content="A lazy multilingual Wordle clone — English, French, Spanish, and Lithuanian.">
+<meta property="og:image" content="https://linxpert.github.io/LAZYDLE/og-image.png">
+<meta property="og:url" content="https://linxpert.github.io/LAZYDLE/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="lazydle">
+<meta name="twitter:description" content="A lazy multilingual Wordle clone — English, French, Spanish, and Lithuanian.">
+<meta name="twitter:image" content="https://linxpert.github.io/LAZYDLE/og-image.png">
 <style>
   :root {
     --navy: #0a1e3d;
@@ -87,6 +97,13 @@
     color: var(--navy);
     border-color: var(--gold);
     font-weight: 600;
+  }
+
+  .lang-divider {
+    width: 1px;
+    height: 22px;
+    background: var(--absent);
+    align-self: center;
   }
 
   .status {
@@ -271,6 +288,8 @@
       <button class="lang-btn active" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="fr">FR</button>
       <button class="lang-btn" data-lang="es">ES</button>
+      <span class="lang-divider"></span>
+      <button class="lang-btn" data-lang="lt">HELL(t)</button>
     </div>
   </header>
 
@@ -299,13 +318,17 @@
     es: ["ABEJA","BRISA","CIELO","DULCE","ENANO","FUEGO","GATOS","HELAR","ISLAS","JUGAR",
          "LIBRO","MADRE","NIEVE","OLIVA","PERRO","QUESO","RAMAS","SUAVE","TORRE","VERDE",
          "ARENA","BARCO","CALLE","DEDOS","FLOTA","GRITO","HUMOR","JOYAS","LLAVE","MOLDE",
-         "NOBLE","PLATA","RUEDA","TRIGO","VUELO","PLAZA","NUBES","FRESA","CARTA","FALDA"]
+         "NOBLE","PLATA","RUEDA","TRIGO","VUELO","PLAZA","NUBES","FRESA","CARTA","FALDA"],
+    lt: ["MAŠINA","VASARA","VAIKAS","LAIKAS","DARBAS","KELIAS","ARKLYS","VILKAS","ŽIURKĖ","VOVERĖ",
+         "KIŠKIS","ERELIS","VARNAS","KIAULĖ","ŠIRDIS","NAKTIS","LANGAS","STALAS","STOGAS","SRIUBA",
+         "PIENAS","ARBATA","RAŠYTI","DIRBTI"]
   };
 
   const KEYBOARD_ROWS = {
     en: ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"],
     fr: ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"],
-    es: ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"]
+    es: ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"],
+    lt: ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM", "ĄČĘĖĮŠŲŪŽ"]
   };
 
   let currentLang = "en";
@@ -315,8 +338,8 @@
   let currentGuess = "";
   let gameOver = false;
   const maxRows = 6;
-  let letterStates = {};
-  let lastWord = {};
+  let letterStates = {}; // per-language letter state memory for keyboard coloring
+  let lastWord = {}; // per-language: avoid repeating the same word twice in a row
 
   const gridEl = document.getElementById("grid");
   const keyboardEl = document.getElementById("keyboard");
@@ -406,7 +429,7 @@
     currentRow = 0;
     currentGuess = "";
     gameOver = false;
-    letterStates[lang] = {};
+    letterStates[lang] = {}; // fresh keyboard for every new word
     newGameBtn.classList.remove("show");
     setStatus("");
     buildGrid();
@@ -456,12 +479,14 @@
     const result = new Array(wordLen).fill("absent");
     const targetRemaining = [...target];
 
+    // first pass: correct
     for (let i = 0; i < wordLen; i++) {
       if (guess[i] === target[i]) {
         result[i] = "correct";
         targetRemaining[i] = null;
       }
     }
+    // second pass: present
     for (let i = 0; i < wordLen; i++) {
       if (result[i] === "correct") continue;
       const idx = targetRemaining.indexOf(guess[i]);
@@ -471,6 +496,7 @@
       }
     }
 
+    // render with flip animation
     for (let c = 0; c < wordLen; c++) {
       const tile = document.getElementById("tile-" + currentRow + "-" + c);
       setTimeout(() => {
@@ -479,6 +505,7 @@
       }, c * 80);
     }
 
+    // update keyboard state memory (don't downgrade correct -> present/absent)
     const states = letterStates[currentLang];
     for (let i = 0; i < wordLen; i++) {
       const letter = guess[i];
@@ -524,7 +551,7 @@
     const key = e.key.toUpperCase();
     if (key === "ENTER") handleKey("ENTER");
     else if (key === "BACKSPACE") handleKey("BACK");
-    else if (/^[A-ZÑ]$/.test(key) && key.length === 1) handleKey(key);
+    else if (/^[A-ZÑĄČĘĖĮŠŲŪŽ]$/.test(key) && key.length === 1) handleKey(key);
   });
 
   startGame("en");
