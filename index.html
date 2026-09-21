@@ -289,11 +289,17 @@
 (function () {
   const WORDS = {
     en: ["APPLE","BRAVE","CLOUD","DRIFT","EAGLE","FROST","GHOST","HONEY","IVORY","JOLLY",
-         "KNEEL","LEMON","MANGO","NOBLE","OASIS","PLANT","QUIRK","RIVER","STONE","TIGER"],
-    fr: ["ARBRE","BLANC","CHIEN","DOUCE","ELFES","FLEUR","GRAND","HEROS","IDOLE","JEUNE",
-         "LIVRE","MONDE","NOEUD","OURSE","PLUIE","QUART","ROUGE","SUCRE","TABLE","VOILE"],
+         "KNEEL","LEMON","MANGO","NOBLE","OASIS","PLANT","QUIRK","RIVER","STONE","TIGER",
+         "AMBER","BLOOM","CRISP","DELTA","EMBER","FABLE","GLIDE","HARSH","INBOX","JUMPY",
+         "KOALA","LUNAR","MELON","NORTH","ORBIT","PIXEL","QUEST","ROBIN","SHINE","TRACE"],
+    fr: ["ARBRE","BLANC","CHIEN","DOUCE","FLEUR","GRAND","HEROS","IDOLE","JEUNE","LIVRE",
+         "MONDE","NOEUD","OURSE","PLUIE","QUART","ROUGE","SUCRE","TABLE","VOILE","AIGLE",
+         "BOUGE","CADRE","DORME","FORET","GLACE","HUMER","IMAGE","JUGER","LOURD","ONCLE",
+         "PAUSE","QUAND","RONCE","SALON","TENDU","VERSE","TIGRE","PORTE","SOURD","GORGE"],
     es: ["ABEJA","BRISA","CIELO","DULCE","ENANO","FUEGO","GATOS","HELAR","ISLAS","JUGAR",
-         "LIBRO","MADRE","NIEVE","OLIVA","PERRO","QUESO","RAMAS","SUAVE","TORRE","VERDE"]
+         "LIBRO","MADRE","NIEVE","OLIVA","PERRO","QUESO","RAMAS","SUAVE","TORRE","VERDE",
+         "ARENA","BARCO","CALLE","DEDOS","FLOTA","GRITO","HUMOR","JOYAS","LLAVE","MOLDE",
+         "NOBLE","PLATA","RUEDA","TRIGO","VUELO","PLAZA","NUBES","FRESA","CARTA","FALDA"]
   };
 
   const KEYBOARD_ROWS = {
@@ -309,7 +315,8 @@
   let currentGuess = "";
   let gameOver = false;
   const maxRows = 6;
-  let letterStates = {}; // per-language letter state memory for keyboard coloring
+  let letterStates = {};
+  let lastWord = {};
 
   const gridEl = document.getElementById("grid");
   const keyboardEl = document.getElementById("keyboard");
@@ -318,7 +325,13 @@
 
   function pickWord(lang) {
     const list = WORDS[lang];
-    return list[Math.floor(Math.random() * list.length)];
+    if (list.length === 1) return list[0];
+    let word;
+    do {
+      word = list[Math.floor(Math.random() * list.length)];
+    } while (word === lastWord[lang]);
+    lastWord[lang] = word;
+    return word;
   }
 
   function buildGrid() {
@@ -443,14 +456,12 @@
     const result = new Array(wordLen).fill("absent");
     const targetRemaining = [...target];
 
-    // first pass: correct
     for (let i = 0; i < wordLen; i++) {
       if (guess[i] === target[i]) {
         result[i] = "correct";
         targetRemaining[i] = null;
       }
     }
-    // second pass: present
     for (let i = 0; i < wordLen; i++) {
       if (result[i] === "correct") continue;
       const idx = targetRemaining.indexOf(guess[i]);
@@ -460,7 +471,6 @@
       }
     }
 
-    // render with flip animation
     for (let c = 0; c < wordLen; c++) {
       const tile = document.getElementById("tile-" + currentRow + "-" + c);
       setTimeout(() => {
@@ -469,7 +479,6 @@
       }, c * 80);
     }
 
-    // update keyboard state memory (don't downgrade correct -> present/absent)
     const states = letterStates[currentLang];
     for (let i = 0; i < wordLen; i++) {
       const letter = guess[i];
