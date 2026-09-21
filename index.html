@@ -331,6 +331,33 @@
     lt: ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM", "ĄČĘĖĮŠŲŪŽ"]
   };
 
+  const STRINGS = {
+    en: {
+      win: (w) => "Nailed it. The word was " + w + ".",
+      lose: (w) => "Out of tries. It was " + w + ".",
+      notEnough: "Not enough letters",
+      newWord: "New word"
+    },
+    fr: {
+      win: (w) => "Bien joué ! Le mot était " + w + ".",
+      lose: (w) => "Plus d'essais. Le mot était " + w + ".",
+      notEnough: "Pas assez de lettres",
+      newWord: "Nouveau mot"
+    },
+    es: {
+      win: (w) => "¡Lo lograste! La palabra era " + w + ".",
+      lose: (w) => "Sin más intentos. Era " + w + ".",
+      notEnough: "Faltan letras",
+      newWord: "Nueva palabra"
+    },
+    lt: {
+      win: (w) => "Puiku! Žodis buvo " + w + ".",
+      lose: (w) => "Bandymai baigėsi. Buvo " + w + ".",
+      notEnough: "Trūksta raidžių",
+      newWord: "Naujas žodis"
+    }
+  };
+
   let currentLang = "en";
   let targetWord = "";
   let wordLen = 5;
@@ -338,8 +365,8 @@
   let currentGuess = "";
   let gameOver = false;
   const maxRows = 6;
-  let letterStates = {}; // per-language letter state memory for keyboard coloring
-  let lastWord = {}; // per-language: avoid repeating the same word twice in a row
+  let letterStates = {};
+  let lastWord = {};
 
   const gridEl = document.getElementById("grid");
   const keyboardEl = document.getElementById("keyboard");
@@ -429,8 +456,9 @@
     currentRow = 0;
     currentGuess = "";
     gameOver = false;
-    letterStates[lang] = {}; // fresh keyboard for every new word
+    letterStates[lang] = {};
     newGameBtn.classList.remove("show");
+    newGameBtn.textContent = STRINGS[lang].newWord;
     setStatus("");
     buildGrid();
     buildKeyboard();
@@ -447,7 +475,7 @@
 
     if (key === "ENTER") {
       if (currentGuess.length !== wordLen) {
-        setStatus("Not enough letters");
+        setStatus(STRINGS[currentLang].notEnough);
         return;
       }
       submitGuess();
@@ -479,14 +507,12 @@
     const result = new Array(wordLen).fill("absent");
     const targetRemaining = [...target];
 
-    // first pass: correct
     for (let i = 0; i < wordLen; i++) {
       if (guess[i] === target[i]) {
         result[i] = "correct";
         targetRemaining[i] = null;
       }
     }
-    // second pass: present
     for (let i = 0; i < wordLen; i++) {
       if (result[i] === "correct") continue;
       const idx = targetRemaining.indexOf(guess[i]);
@@ -496,7 +522,6 @@
       }
     }
 
-    // render with flip animation
     for (let c = 0; c < wordLen; c++) {
       const tile = document.getElementById("tile-" + currentRow + "-" + c);
       setTimeout(() => {
@@ -505,7 +530,6 @@
       }, c * 80);
     }
 
-    // update keyboard state memory (don't downgrade correct -> present/absent)
     const states = letterStates[currentLang];
     for (let i = 0; i < wordLen; i++) {
       const letter = guess[i];
@@ -524,11 +548,11 @@
 
     if (won) {
       gameOver = true;
-      setStatus("Nailed it. The word was " + targetWord + ".");
+      setStatus(STRINGS[currentLang].win(targetWord));
       newGameBtn.classList.add("show");
     } else if (currentRow === maxRows - 1) {
       gameOver = true;
-      setStatus("Out of tries. It was " + targetWord + ".");
+      setStatus(STRINGS[currentLang].lose(targetWord));
       newGameBtn.classList.add("show");
     } else {
       currentRow++;
