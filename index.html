@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lazydle — a lazy word game</title>
+<style>
+  :root {
+    --navy: #0a1e3d;
+    --navy-light: #122c54;
+    --cream: #faf3ec;
+    --gold: #f4c542;
+    --gold-dim: #c99a2e;
+    --blue: #4a8fd9;
+    --sage: #8a9a5b;
+    --sage-dim: #6b7a44;
+    --absent: #3a4a63;
+    --text-dim: #9aa8bf;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--navy);
+    color: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100%;
+  }
+
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+    width: 100%;
+  }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    font-size: 2.1rem;
+    margin: 0 0 4px;
+    letter-spacing: 0.5px;
+    color: var(--gold);
+  }
+
+  .tagline {
+    margin: 0 0 20px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .lang-switch {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .lang-btn {
+    background: var(--navy-light);
+    border: 1px solid var(--absent);
+    color: var(--cream);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .lang-btn:hover {
+    border-color: var(--gold-dim);
+  }
+
+  .lang-btn.active {
+    background: var(--gold);
+    color: var(--navy);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  .status {
+    min-height: 24px;
+    margin: 14px 0 6px;
+    font-size: 0.95rem;
+    text-align: center;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(var(--word-len, 5), 1fr);
+    gap: 6px;
+  }
+
+  .tile {
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--absent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--navy-light);
+    color: var(--cream);
+    transition: transform 0.12s;
+  }
+
+  .tile.filled {
+    border-color: var(--text-dim);
+  }
+
+  .tile.correct {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: var(--navy);
+  }
+
+  .tile.present {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--navy);
+  }
+
+  .tile.absent {
+    background: var(--absent);
+    border-color: var(--absent);
+    color: var(--text-dim);
+  }
+
+  .tile.pop {
+    animation: pop 0.12s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .tile.flip {
+    animation: flip 0.4s ease;
+  }
+
+  @keyframes flip {
+    0% { transform: rotateX(0); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0); }
+  }
+
+  .keyboard {
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    align-items: center;
+  }
+
+  .krow {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .key {
+    flex: 1;
+    max-width: 40px;
+    height: 46px;
+    border: none;
+    border-radius: 6px;
+    background: var(--navy-light);
+    color: var(--cream);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.08s;
+  }
+
+  .key:active {
+    transform: scale(0.95);
+  }
+
+  .key.wide {
+    max-width: 64px;
+    font-size: 0.65rem;
+  }
+
+  .key.correct {
+    background: var(--sage);
+    color: var(--navy);
+  }
+
+  .key.present {
+    background: var(--gold);
+    color: var(--navy);
+  }
+
+  .key.absent {
+    background: var(--absent);
+    color: var(--text-dim);
+  }
+
+  .footer-note {
+    margin-top: 28px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .new-game-btn {
+    margin-top: 16px;
+    background: var(--blue);
+    color: var(--cream);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+  }
+
+  .new-game-btn.show {
+    display: inline-block;
+  }
+
+  .new-game-btn:hover {
+    background: #3a7fc9;
+  }
+
+  @media (max-width: 380px) {
+    .tile { width: 44px; height: 44px; font-size: 1.25rem; }
+    .key { height: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>lazydle</h1>
+    <p class="tagline">a lazy solution to being bored — guess the word, switch the language, repeat</p>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="fr">FR</button>
+      <button class="lang-btn" data-lang="es">ES</button>
+    </div>
+  </header>
+
+  <div class="status" id="status"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="keyboard" id="keyboard"></div>
+
+  <button class="new-game-btn" id="newGameBtn">New word</button>
+
+  <p class="footer-note">Six tries. Green-ish means right letter, right spot.<br>Gold means right letter, wrong spot. Built by <strong>Linxpert</strong>.</p>
+</div>
+
+<script>
+(function () {
+  const WORDS = {
+    en: ["APPLE","BRAVE","CLOUD","DRIFT","EAGLE","FROST","GHOST","HONEY","IVORY","JOLLY",
+         "KNEEL","LEMON","MANGO","NOBLE","OASIS","PLANT","QUIRK","RIVER","STONE","TIGER"],
+    fr: ["ARBRE","BLANC","CHIEN","DOUCE","ELFES","FLEUR","GRAND","HEROS","IDOLE","JEUNE",
+         "LIVRE","MONDE","NOEUD","OURSE","PLUIE","QUART","ROUGE","SUCRE","TABLE","VOILE"],
+    es: ["ABEJA","BRISA","CIELO","DULCE","ENANO","FUEGO","GATOS","HELAR","ISLAS","JUGAR",
+         "LIBRO","MADRE","NIEVE","OLIVA","PERRO","QUESO","RAMAS","SUAVE","TORRE","VERDE"]
+  };
+
+  const KEYBOARD_ROWS = {
+    en: ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"],
+    fr: ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"],
+    es: ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"]
+  };
+
+  let currentLang = "en";
+  let targetWord = "";
+  let wordLen = 5;
+  let currentRow = 0;
+  let currentGuess = "";
+  let gameOver = false;
+  const maxRows = 6;
+  let letterStates = {}; // per-language letter state memory for keyboard coloring
+
+  const gridEl = document.getElementById("grid");
+  const keyboardEl = document.getElementById("keyboard");
+  const statusEl = document.getElementById("status");
+  const newGameBtn = document.getElementById("newGameBtn");
+
+  function pickWord(lang) {
+    const list = WORDS[lang];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function buildGrid() {
+    gridEl.innerHTML = "";
+    gridEl.style.setProperty("--word-len", wordLen);
+    for (let r = 0; r < maxRows; r++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.id = "row-" + r;
+      for (let c = 0; c < wordLen; c++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.id = "tile-" + r + "-" + c;
+        row.appendChild(tile);
+      }
+      gridEl.appendChild(row);
+    }
+  }
+
+  function buildKeyboard() {
+    keyboardEl.innerHTML = "";
+    const rows = KEYBOARD_ROWS[currentLang];
+    rows.forEach((rowStr, idx) => {
+      const krow = document.createElement("div");
+      krow.className = "krow";
+      if (idx === 2) {
+        const enterKey = document.createElement("button");
+        enterKey.className = "key wide";
+        enterKey.textContent = "Enter";
+        enterKey.addEventListener("click", () => handleKey("ENTER"));
+        krow.appendChild(enterKey);
+      }
+      for (const ch of rowStr) {
+        const key = document.createElement("button");
+        key.className = "key";
+        key.textContent = ch;
+        key.dataset.key = ch;
+        key.addEventListener("click", () => handleKey(ch));
+        krow.appendChild(key);
+      }
+      if (idx === 2) {
+        const backKey = document.createElement("button");
+        backKey.className = "key wide";
+        backKey.textContent = "⌫";
+        backKey.addEventListener("click", () => handleKey("BACK"));
+        krow.appendChild(backKey);
+      }
+      keyboardEl.appendChild(krow);
+    });
+    applyKeyStates();
+  }
+
+  function applyKeyStates() {
+    const states = letterStates[currentLang] || {};
+    document.querySelectorAll(".key[data-key]").forEach(keyEl => {
+      const letter = keyEl.dataset.key;
+      keyEl.classList.remove("correct", "present", "absent");
+      if (states[letter]) {
+        keyEl.classList.add(states[letter]);
+      }
+    });
+  }
+
+  function setStatus(msg) {
+    statusEl.textContent = msg;
+  }
+
+  function startGame(lang) {
+    currentLang = lang;
+    targetWord = pickWord(lang);
+    wordLen = targetWord.length;
+    currentRow = 0;
+    currentGuess = "";
+    gameOver = false;
+    if (!letterStates[lang]) letterStates[lang] = {};
+    newGameBtn.classList.remove("show");
+    setStatus("");
+    buildGrid();
+    buildKeyboard();
+  }
+
+  function handleKey(key) {
+    if (gameOver) return;
+
+    if (key === "BACK") {
+      currentGuess = currentGuess.slice(0, -1);
+      renderCurrentRow();
+      return;
+    }
+
+    if (key === "ENTER") {
+      if (currentGuess.length !== wordLen) {
+        setStatus("Not enough letters");
+        return;
+      }
+      submitGuess();
+      return;
+    }
+
+    if (currentGuess.length < wordLen) {
+      currentGuess += key;
+      renderCurrentRow(true);
+    }
+  }
+
+  function renderCurrentRow(pop) {
+    for (let c = 0; c < wordLen; c++) {
+      const tile = document.getElementById("tile-" + currentRow + "-" + c);
+      const letter = currentGuess[c] || "";
+      tile.textContent = letter;
+      tile.classList.toggle("filled", !!letter);
+      if (pop && c === currentGuess.length - 1) {
+        tile.classList.add("pop");
+        setTimeout(() => tile.classList.remove("pop"), 130);
+      }
+    }
+  }
+
+  function submitGuess() {
+    const guess = currentGuess.split("");
+    const target = targetWord.split("");
+    const result = new Array(wordLen).fill("absent");
+    const targetRemaining = [...target];
+
+    // first pass: correct
+    for (let i = 0; i < wordLen; i++) {
+      if (guess[i] === target[i]) {
+        result[i] = "correct";
+        targetRemaining[i] = null;
+      }
+    }
+    // second pass: present
+    for (let i = 0; i < wordLen; i++) {
+      if (result[i] === "correct") continue;
+      const idx = targetRemaining.indexOf(guess[i]);
+      if (idx !== -1) {
+        result[i] = "present";
+        targetRemaining[idx] = null;
+      }
+    }
+
+    // render with flip animation
+    for (let c = 0; c < wordLen; c++) {
+      const tile = document.getElementById("tile-" + currentRow + "-" + c);
+      setTimeout(() => {
+        tile.classList.add(result[c]);
+        tile.classList.add("flip");
+      }, c * 80);
+    }
+
+    // update keyboard state memory (don't downgrade correct -> present/absent)
+    const states = letterStates[currentLang];
+    for (let i = 0; i < wordLen; i++) {
+      const letter = guess[i];
+      const cur = states[letter];
+      if (result[i] === "correct") {
+        states[letter] = "correct";
+      } else if (result[i] === "present" && cur !== "correct") {
+        states[letter] = "present";
+      } else if (!cur) {
+        states[letter] = "absent";
+      }
+    }
+    setTimeout(applyKeyStates, wordLen * 80 + 100);
+
+    const won = guess.join("") === targetWord;
+
+    if (won) {
+      gameOver = true;
+      setStatus("Nailed it. The word was " + targetWord + ".");
+      newGameBtn.classList.add("show");
+    } else if (currentRow === maxRows - 1) {
+      gameOver = true;
+      setStatus("Out of tries. It was " + targetWord + ".");
+      newGameBtn.classList.add("show");
+    } else {
+      currentRow++;
+      currentGuess = "";
+      setStatus("");
+    }
+  }
+
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      startGame(btn.dataset.lang);
+    });
+  });
+
+  newGameBtn.addEventListener("click", () => startGame(currentLang));
+
+  document.addEventListener("keydown", (e) => {
+    const key = e.key.toUpperCase();
+    if (key === "ENTER") handleKey("ENTER");
+    else if (key === "BACKSPACE") handleKey("BACK");
+    else if (/^[A-ZÑ]$/.test(key) && key.length === 1) handleKey(key);
+  });
+
+  startGame("en");
+})();
+</script>
+
+</body>
+</html>
