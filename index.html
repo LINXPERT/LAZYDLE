@@ -406,7 +406,7 @@
     currentRow = 0;
     currentGuess = "";
     gameOver = false;
-    if (!letterStates[lang]) letterStates[lang] = {};
+    letterStates[lang] = {};
     newGameBtn.classList.remove("show");
     setStatus("");
     buildGrid();
