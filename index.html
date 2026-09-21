@@ -27,7 +27,7 @@
     --absent: #3a4a63;
     --text-dim: #9aa8bf;
   }
-  
+
   * { box-sizing: border-box; }
 
   html, body {
@@ -276,6 +276,21 @@
     .tile { width: 44px; height: 44px; font-size: 1.25rem; }
     .key { height: 42px; }
   }
+
+  .firework-particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999;
+    animation: firework-burst 900ms ease-out forwards;
+  }
+
+  @keyframes firework-burst {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -283,13 +298,13 @@
 <div class="wrap">
   <header>
     <h1>lazydle</h1>
-    <p class="tagline">a lazy solution to being bored — guess the word, switch the language, repeat</p>
+    <p class="tagline" id="tagline">a lazy solution to being bored — guess the word, switch the language, repeat</p>
     <div class="lang-switch">
       <button class="lang-btn active" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="fr">FR</button>
       <button class="lang-btn" data-lang="es">ES</button>
       <span class="lang-divider"></span>
-      <button class="lang-btn" data-lang="lt">HELL(t)</button>
+      <button class="lang-btn" data-lang="lt">LT</button>
     </div>
   </header>
 
@@ -301,7 +316,7 @@
 
   <button class="new-game-btn" id="newGameBtn">New word</button>
 
-  <p class="footer-note">Six tries. Green-ish means right letter, right spot.<br>Gold means right letter, wrong spot. Built by <strong>Linxpert</strong>.</p>
+  <p class="footer-note" id="footerNote">Six tries. Green-ish means right letter, right spot.<br>Gold means right letter, wrong spot. Built by <strong>Linxpert</strong>.</p>
 </div>
 
 <script>
@@ -336,25 +351,37 @@
       win: (w) => "Nailed it. The word was " + w + ".",
       lose: (w) => "Out of tries. It was " + w + ".",
       notEnough: "Not enough letters",
-      newWord: "New word"
+      newWord: "New word",
+      tagline: "a lazy solution to being bored — guess the word, switch the language, repeat",
+      footer: "Six tries. Green-ish means right letter, right spot.<br>Gold means right letter, wrong spot. Built by <strong>Linxpert</strong>.",
+      enter: "Enter"
     },
     fr: {
       win: (w) => "Bien joué ! Le mot était " + w + ".",
       lose: (w) => "Plus d'essais. Le mot était " + w + ".",
       notEnough: "Pas assez de lettres",
-      newWord: "Nouveau mot"
+      newWord: "Nouveau mot",
+      tagline: "une solution paresseuse à l'ennui — devine le mot, change de langue, recommence",
+      footer: "Six essais. Le vert signifie bonne lettre, bonne place.<br>L'or signifie bonne lettre, mauvaise place. Créé par <strong>Linxpert</strong>.",
+      enter: "Entrée"
     },
     es: {
       win: (w) => "¡Lo lograste! La palabra era " + w + ".",
       lose: (w) => "Sin más intentos. Era " + w + ".",
       notEnough: "Faltan letras",
-      newWord: "Nueva palabra"
+      newWord: "Nueva palabra",
+      tagline: "una solución perezosa al aburrimiento — adivina la palabra, cambia de idioma, repite",
+      footer: "Seis intentos. El verde significa letra correcta, lugar correcto.<br>El dorado significa letra correcta, lugar incorrecto. Creado por <strong>Linxpert</strong>.",
+      enter: "Intro"
     },
     lt: {
       win: (w) => "Puiku! Žodis buvo " + w + ".",
       lose: (w) => "Bandymai baigėsi. Buvo " + w + ".",
       notEnough: "Trūksta raidžių",
-      newWord: "Naujas žodis"
+      newWord: "Naujas žodis",
+      tagline: "tingus sprendimas nuobodulio problemai — atspėk žodį, keisk kalbą, kartok",
+      footer: "Šeši bandymai. Žalia reiškia teisingą raidę teisingoje vietoje.<br>Auksinė reiškia teisingą raidę neteisingoje vietoje. Sukūrė <strong>Linxpert</strong>.",
+      enter: "Įvesti"
     }
   };
 
@@ -410,7 +437,7 @@
       if (idx === 2) {
         const enterKey = document.createElement("button");
         enterKey.className = "key wide";
-        enterKey.textContent = "Enter";
+        enterKey.textContent = STRINGS[currentLang].enter;
         enterKey.addEventListener("click", () => handleKey("ENTER"));
         krow.appendChild(enterKey);
       }
@@ -449,6 +476,34 @@
     statusEl.textContent = msg;
   }
 
+  function launchFireworks() {
+    const colors = ["#f4c542", "#8a9a5b", "#4a8fd9", "#faf3ec"];
+    const origins = [
+      { x: window.innerWidth * 0.35, y: window.innerHeight * 0.35 },
+      { x: window.innerWidth * 0.65, y: window.innerHeight * 0.3 }
+    ];
+
+    origins.forEach((origin, i) => {
+      setTimeout(() => {
+        for (let p = 0; p < 26; p++) {
+          const particle = document.createElement("div");
+          particle.className = "firework-particle";
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 70 + Math.random() * 130;
+          const tx = Math.cos(angle) * distance;
+          const ty = Math.sin(angle) * distance;
+          particle.style.setProperty("--tx", tx + "px");
+          particle.style.setProperty("--ty", ty + "px");
+          particle.style.left = origin.x + "px";
+          particle.style.top = origin.y + "px";
+          particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 950);
+        }
+      }, i * 150);
+    });
+  }
+
   function startGame(lang) {
     currentLang = lang;
     targetWord = pickWord(lang);
@@ -459,6 +514,8 @@
     letterStates[lang] = {};
     newGameBtn.classList.remove("show");
     newGameBtn.textContent = STRINGS[lang].newWord;
+    document.getElementById("tagline").textContent = STRINGS[lang].tagline;
+    document.getElementById("footerNote").innerHTML = STRINGS[lang].footer;
     setStatus("");
     buildGrid();
     buildKeyboard();
@@ -550,6 +607,7 @@
       gameOver = true;
       setStatus(STRINGS[currentLang].win(targetWord));
       newGameBtn.classList.add("show");
+      launchFireworks();
     } else if (currentRow === maxRows - 1) {
       gameOver = true;
       setStatus(STRINGS[currentLang].lose(targetWord));
